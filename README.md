@@ -72,7 +72,7 @@ MBOX-16 (also known as MOSBOX) is a 6502-based virtual computer and assembler to
 
 ## License
 
-MIT License
+GNU General Public License v3
 
 ---
 

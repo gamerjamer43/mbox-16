@@ -1,8 +1,9 @@
 from sys import argv, stdin
-
+import pygame  # new import for event processing
 from core.asm.asm import Assembler
 from core.components.cpu import CPU
 from core.components.mem import Memory
+from core.components.screen import Screen  # new import
 
 # makes prints colored
 from rich import print
@@ -34,6 +35,9 @@ def main():
     cpu = CPU(mem)
     cpu.PC = asm.origin
 
+    screen = Screen(mem)  # new screen instance
+    screen.start()        # start asynchronous screen updates
+
     # run the program
     while True:
         try:
@@ -45,6 +49,15 @@ def main():
         except KeyboardInterrupt:
             print("\n[bold red]Execution interrupted by user.[/bold red]")
             break
+    
+    while screen.running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                screen.running = False
+        pygame.time.wait(100)
+
+    screen.stop()
+    pygame.quit()
 
     # print all data in ROM if flag is enabled
     if printdata == True:

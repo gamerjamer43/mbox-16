@@ -1,5 +1,11 @@
+# directories
 bin/
 testprogs/
+
+# pycache stuff
 __pycache__/
 *.pyc
+
+# other python files (that i might add soon)
 tracer.py
+py2asm.py

@@ -25,7 +25,6 @@ class CPU:
         self.SP = 0xFD                    # stack pointer
         self.PC = self.read_word(0xFFFC)  # reset vector
         self.P = 0x24                     # processor status: NV-BDIZC
-        self.halted = False               # halt state
         self.cycles = 0                   # cycle count
 
         # initialize opcode dispatch table
@@ -492,7 +491,7 @@ class CPU:
         self.php()
         self.set_flag(Flag.I, True)
         self.PC = self.read_word(0xFFFE)
-
+        
     def nop(self):
         """no operation: does nothing."""
         pass

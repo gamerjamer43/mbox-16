@@ -93,6 +93,12 @@ class Assembler:
             else:
                 return AddrType.ABS, operand
 
+        # label expressions like LABEL+1 or LABEL-1
+        expr_match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', operand)
+        if expr_match:
+            # We don't know the value yet, so treat as ABS for now
+            return AddrType.ABS, operand
+
         # label (for all other cases)
         if operand.isidentifier():
             return AddrType.ABS, operand
@@ -329,21 +335,36 @@ class Assembler:
         # handle character literals enclosed in single quotes
         if len(val) >= 2 and val[0] == "'" and val[-1] == "'":
             return ord(val[1:-1])
-        
+
         # handle operands with indexing, e.g., "LABEL,X" or "LABEL,Y"
         if isinstance(val, str) and ',' in val:
             base, reg = val.split(',')
             return self.resolve_value(base.strip())
-        
+
+        # handle expressions like LABEL+1 or LABEL-1
+        expr_match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', val)
+        if expr_match:
+            base_label = expr_match.group(1)
+            op = expr_match.group(2)
+            offset = int(expr_match.group(3))
+            if base_label in self.labels:
+                base_addr = self.labels[base_label]
+                if op == '+':
+                    return base_addr + offset
+                else:
+                    return base_addr - offset
+            else:
+                raise ValueError(f"Unknown label in expression: {val}")
+
         if val.startswith('$'):
             return int(val[1:], 16)
-        
+
         elif val.isdigit():
             return int(val)
-        
+
         elif val in self.labels:
             return self.labels[val]
-        
+
         # if value is a number literal or label, resolve it here.
         raise ValueError(f"Unknown value: {val}")
 

@@ -1,6 +1,6 @@
 from .opcodes import OPCODES
 from .addrtype import AddrType
-import re
+from re import match
 
 class Assembler:
     def __init__(self, origin=0xA000):
@@ -94,7 +94,7 @@ class Assembler:
                 return AddrType.ABS, operand
 
         # label expressions like LABEL+1 or LABEL-1
-        expr_match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', operand)
+        expr_match = match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', operand)
         if expr_match:
             # We don't know the value yet, so treat as ABS for now
             return AddrType.ABS, operand
@@ -151,7 +151,7 @@ class Assembler:
             return ('string', arg, False)
         
         # instruction
-        m = re.match(r'^([A-Za-z]{2,3})(?:\s+(.*))?$', line)
+        m = match(r'^([A-Za-z]{2,3})(?:\s+(.*))?$', line)
         if m:
             mnemonic = m.group(1).upper()
             operand = m.group(2) or ''
@@ -342,7 +342,7 @@ class Assembler:
             return self.resolve_value(base.strip())
 
         # handle expressions like LABEL+1 or LABEL-1
-        expr_match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', val)
+        expr_match = match(r'^([A-Za-z_][A-Za-z0-9_]*)\s*([\+\-])\s*(\d+)$', val)
         if expr_match:
             base_label = expr_match.group(1)
             op = expr_match.group(2)

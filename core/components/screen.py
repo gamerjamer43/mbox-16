@@ -1,6 +1,4 @@
-import pygame
-import numpy as np
-import threading
+import pygame, numpy as np, threading
 
 class Screen:
     def __init__(self, memory, scale=4):
@@ -9,35 +7,46 @@ class Screen:
         self.scale = scale
         self.width = 128
         self.height = 128
+        
         # screen memory address and size from Memory object
         self.screen_ram_start = memory.SCREEN_RAM_START
         self.screen_ram_size = self.width * self.height  # 16384 bytes
+
+        # initialize pygame and create a window, and ticker for frame rate control
         pygame.init()
         self.window = pygame.display.set_mode((self.width * self.scale, self.height * self.scale))
         pygame.display.set_caption("6502 Emulator Screen")
         self.clock = pygame.time.Clock()
+
+        # running state and thread handle
         self.running = True
-        self.thread = None   # added thread handle
+        self.thread = None
 
     def draw(self):
-        """render the current video memory contents with palette mapping."""
-        # Read and reshape the screen memory (8-bit per pixel)
+        """render the current video memory contents using 8-bit (3-3-2) palette mapping."""
+        # read and reshape the screen memory (8-bit per pixel)
         screen_data = np.frombuffer(
             self.memory.data[self.screen_ram_start : self.screen_ram_start + self.screen_ram_size],
             dtype=np.uint8
         ).reshape((self.height, self.width))
-        # Default: create a grayscale image by replicating the 8-bit value over R, G, B
-        rgb_array = np.stack([screen_data, screen_data, screen_data], axis=-1)
-        # Palette override: if a pixel equals $E0, display it as red (255,0,0)
-        red_mask = (screen_data == 0xE0)
-        rgb_array[red_mask] = [255, 0, 0]
+
+        # build 8-bit palette using a 3-3-2 bit mapping
+        palette = np.empty((256, 3), dtype=np.uint8)
+        for i in range(256):
+            r = (i >> 5) & 0x07  # red: 0-7
+            g = (i >> 2) & 0x07  # green: 0-7
+            b = i & 0x03         # blue: 0-3
+            palette[i] = [int(r * 255 / 7), int(g * 255 / 7), int(b * 255 / 3)]
+
+        # map each pixel to its corresponding RGB color using the palette, blit to surface
+        rgb_array = palette[screen_data]
         surface = pygame.surfarray.make_surface(rgb_array)
         scaled_surface = pygame.transform.scale(surface, (self.width * self.scale, self.height * self.scale))
         self.window.blit(scaled_surface, (0, 0))
         pygame.display.flip()
 
     def run(self):
-        """Asynchronous update loop running on a separate thread."""
+        """asynchronous update loop running on a separate thread."""
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

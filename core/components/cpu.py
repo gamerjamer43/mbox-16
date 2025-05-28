@@ -491,7 +491,7 @@ class CPU:
         self.php()
         self.set_flag(Flag.I, True)
         self.PC = self.read_word(0xFFFE)
-        
+
     def nop(self):
         """no operation: does nothing."""
         pass

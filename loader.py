@@ -1,9 +1,11 @@
 from sys import argv, stdin
-import pygame  # new import for event processing
+import pygame
+
+# assembler and components
 from core.asm.asm import Assembler
 from core.components.cpu import CPU
 from core.components.mem import Memory
-from core.components.screen import Screen  # new import
+from core.components.screen import Screen 
 
 # makes prints colored
 from rich import print
@@ -27,35 +29,44 @@ def main():
     mem = Memory()
     mem.load_rom(code, asm.origin)
 
-    # register print handler at $D020
+    # register print handler at $D020 (for output)
     mem.register_write_handler(0xD020, lambda addr, val: print(chr(val), end='', flush=True))
+
+    # register read handler at $D010 (for input)
     mem.register_read_handler(0xD010, lambda addr: ord(stdin.read(1)))
 
+
+    # to add: register keyboard handler at $D011 (for reading keys)
+    # kb = Keyboard()
+    # mem.register_read_handler(0xD011, lambda addr: kb.read_key())
+    
     # also init cpu
     cpu = CPU(mem)
     cpu.PC = asm.origin
 
-    screen = Screen(mem)  # new screen instance
-    screen.start()        # start asynchronous screen updates
+    # and start the screen seperately
+    screen = Screen(mem)
+    screen.start()      
 
-    # run the program
+    # run the program (ending when cpu.PC equals 0x00)
     while True:
         try:
             if cpu.read(cpu.PC) == 0x00:
                 cpu.step()  # execute BRK
                 break
-                
             cpu.step()
         except KeyboardInterrupt:
             print("\n[bold red]Execution interrupted by user.[/bold red]")
             break
     
+    # keep screen up when BRK is reached until user closes it
     while screen.running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 screen.running = False
         pygame.time.wait(100)
 
+    # stop screen thread
     screen.stop()
     pygame.quit()
 

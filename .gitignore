@@ -1,6 +1,7 @@
 # directories
 bin/
 testprogs/
+roms/
 
 # pycache stuff
 __pycache__/

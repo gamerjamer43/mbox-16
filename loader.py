@@ -1,4 +1,5 @@
 from sys import argv, stdin
+import os
 import pygame
 
 # assembler and components
@@ -12,22 +13,38 @@ from rich import print
 
 printdata = False  # set to True to print all data in ROM after execution
 
+
 def main():
-    # get program text from file if given
-    if len(argv) > 1:
-        with open(argv[1], 'r') as f:
-            program_text = f.read()
+    if len(argv) < 2:
+        raise FileNotFoundError("No program file provided. Please specify a file containing the assembly code or a .rom file.")
+
+    filepath = argv[1]
+    ext = os.path.splitext(filepath)[1].lower()
+
+    # based on ext, load raw rom or assemble source code
+    if ext in ['.rom', '.bin']:
+        # load binary ROM directly
+        with open(filepath, 'rb') as f:
+            data = f.read()
+        
+        # put code in a bytearray and set origin to default $A000
+        code = bytearray(data)
+        origin = 0xA000
+        print(f"Loaded raw ROM '{filepath}' ({len(code)} bytes) at default origin ${origin:04X}")
 
     else:
-        raise FileNotFoundError("No program file provided. Please specify a file containing the assembly code.")
-    
-    # assemble and load
-    asm = Assembler()
-    code = asm.assemble(program_text)
+        # assemble source file
+        with open(filepath, 'r') as f:
+            program_text = f.read()
 
-    # load at assembler origin
+        asm = Assembler()
+        code = asm.assemble(program_text)
+        origin = getattr(asm, 'origin', 0xA000) or 0xA000
+        print(f"Assembled '{filepath}' ({len(code)} bytes) at origin ${origin:04X}")
+
+    # initialize memory and load ROM
     mem = Memory()
-    mem.load_rom(code, asm.origin)
+    mem.load_rom(code, origin)
 
     # register print handler at $D020 (for output)
     mem.register_write_handler(0xD020, lambda addr, val: print(chr(val), end='', flush=True))
@@ -35,18 +52,13 @@ def main():
     # register read handler at $D010 (for input)
     mem.register_read_handler(0xD010, lambda addr: ord(stdin.read(1)))
 
-
-    # to add: register keyboard handler at $D011 (for reading keys)
-    # kb = Keyboard()
-    # mem.register_read_handler(0xD011, lambda addr: kb.read_key())
-    
-    # also init cpu
+    # init cpu
     cpu = CPU(mem)
-    cpu.PC = asm.origin
+    cpu.PC = origin
 
-    # and start the screen seperately
+    # start the screen separately
     screen = Screen(mem)
-    screen.start()      
+    screen.start()
 
     # run the program (ending when cpu.PC equals 0x00)
     while True:
@@ -71,10 +83,13 @@ def main():
     pygame.quit()
 
     # print all data in ROM if flag is enabled
-    if printdata == True:
+    if printdata:
         print("\n[green]ROM Data Dump:[/green]")
-        for addr in range(mem.BASIC_ROM_START, mem.BASIC_ROM_START + len(code)):
-            print(f"[blue]${addr:04X}:[/blue] [green]{mem.data[addr]:02X}[green]")
+        start = origin
+        for i, byte in enumerate(code):
+            addr = start + i
+            print(f"[blue]${addr:04X}:[/blue] [green]{byte:02X}[/green]")
+
 
 if __name__ == '__main__':
     main()

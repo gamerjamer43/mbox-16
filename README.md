@@ -55,7 +55,8 @@ MBOX-16 (also known as MOSBOX) is a 6502-based virtual computer and assembler to
 - **Output**: Writing to `$D020` prints a character to the console.
 - **Input**: Reading from `$D010` reads a character from stdin.
 
---
+---
+
 ## Planned Features:
 - **Screen:** I tried two renditions of this with a screen, but it created too many problems when trying to pinpoint where bugs took place. Long story short I overlapped Opcode addresses and VRAM addresses when I allocated VRAM in the memory model like a silly gentleman.
 - **Basic operating system:** I want to layer a basic OS on top of this that you can plug in like a ROM. This will contain developer tools such as a code editor, a sprite creator, and other features to make development on this computer easy and fun.
